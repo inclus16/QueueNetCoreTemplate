@@ -31,6 +31,7 @@ namespace Tests.Helpers
                 model.ExchangeDeclare(EXCHANGE_NAME, ExchangeType.Direct);
                 model.QueueDeclare(QUEUE_NAME, false, false, false, null);
                 model.QueueBind(QUEUE_NAME, EXCHANGE_NAME, ROUTING_KEY, null);
+                model.QueuePurge(QUEUE_NAME);
             }
         }
 
