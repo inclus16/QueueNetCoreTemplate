@@ -1,8 +1,6 @@
 ﻿using InclusService.Dto;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
-using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace InclusService.Services
@@ -11,9 +9,11 @@ namespace InclusService.Services
     {
         private readonly Connection ConnectionData;
 
-        private bool IsConnected = false;
-
         private IConnection Connection;
+
+        public delegate void IncomingMessageHandler(Message message);
+
+        public event IncomingMessageHandler OnIncomingMessage;
         public QueueAccessor(Connection connection)
         {
             ConnectionData = connection;
@@ -29,11 +29,18 @@ namespace InclusService.Services
             model.BasicPublish(exchange, routingKey, null, messageBodyBytes);
         }
 
-        public void Watch()
+        public void Watch(string queue)
         {
             if (Connection == null)
             {
                 Connect();
+            }
+            while (Connection.IsOpen)
+            {
+                IModel model = Connection.CreateModel();
+                BasicGetResult result = model.BasicGet(queue, false);
+                byte[] body = result.Body;
+                OnIncomingMessage?.Invoke(JsonConvert.DeserializeObject<Message>(Encoding.UTF8.GetString(body)));
             }
         }
 
