@@ -1,6 +1,7 @@
 ﻿using InclusService.Services;
-using System.Threading;
-using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
+using System.Text;
 using Tests.Helpers;
 using Xunit;
 
@@ -11,7 +12,6 @@ namespace Tests
         private readonly QueueAccessor Queue;
 
         private readonly InclusService.Dto.Connection Connection;
-
         public QueueAccessorTests()
         {
             Connection = new InclusService.Dto.Connection
@@ -38,30 +38,6 @@ namespace Tests
             Assert.Equal(sendedMessage.Type.FullName, receivedMessage.Type.FullName);
             Assert.Equal(sendedMessage.Data, receivedMessage.Data);
             ReleaseWorkspace(Connection);
-        }
-
-        [Fact]
-        public async Task WatchTest()
-        {
-            InitWorkspace(Connection);
-            CancellationTokenSource tokenSource = new CancellationTokenSource();
-            Task watch = Task.Run(()=>Queue.Watch(QUEUE_NAME),tokenSource.Token);
-            InclusService.Dto.Message sendedMessage = new InclusService.Dto.Message
-            {
-                Type = typeof(QueueAccessor),
-                Data = "SOME_DATA"
-            };
-            await Task.Delay(2000);
-            Queue.OnIncomingMessage+=(InclusService.Dto.Message incomingMessage)=>
-            {
-                Assert.Equal(sendedMessage.Type.FullName, incomingMessage.Type.FullName);
-                Assert.Equal(sendedMessage.Data.ToString(), incomingMessage.Data.ToString());
-                tokenSource.Cancel();
-                ReleaseWorkspace(Connection);
-            };
-            Queue.Dispatch(sendedMessage, EXCHANGE_NAME, ROUTING_KEY);
-
-
         }
     }
 }
